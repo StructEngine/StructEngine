@@ -1,5 +1,6 @@
 package com.realcraft.buildmodel.service;
 
+import com.realcraft.buildmodel.model.RegionSnapshot;
 import com.realcraft.buildmodel.model.VoxelBlock;
 import com.realcraft.buildmodel.queue.BuildTaskQueue;
 import com.realcraft.buildmodel.queue.ModelBuildJob;
@@ -45,6 +46,8 @@ public class ModelBuildService {
             // 玩家即使已离线，任务仍需入队并走完队列
             server.execute(() -> {
                 ModelBuildJob job = ModelBuildJob.fromVoxelBlocks(player, world, blocks);
+                RegionSnapshot snapshot = new RegionSnapshot(world, job.getPlacements());
+                BuildHistoryManager.getInstance().recordBuild(player, world, snapshot, job.getPlacements(), job);
                 BuildTaskQueue.getInstance().enqueue(job);
                 sendInfo(player, "已获取 " + blocks.size() + " 个方块，开始分批构建...");
             });

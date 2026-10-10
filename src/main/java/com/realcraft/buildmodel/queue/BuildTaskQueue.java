@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class BuildTaskQueue {
     private static final BuildTaskQueue INSTANCE = new BuildTaskQueue();
 
-    private final Queue<ModelBuildJob> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<BuildJob> queue = new ConcurrentLinkedQueue<>();
 
     private BuildTaskQueue() {
     }
@@ -15,8 +15,12 @@ public class BuildTaskQueue {
         return INSTANCE;
     }
 
-    public void enqueue(ModelBuildJob job) {
+    public void enqueue(BuildJob job) {
         queue.add(job);
+    }
+
+    public boolean remove(BuildJob job) {
+        return queue.remove(job);
     }
 
     public boolean isEmpty() {
@@ -30,15 +34,14 @@ public class BuildTaskQueue {
     public int tick(int maxBlocksPerTick) {
         int placed = 0;
         while (placed < maxBlocksPerTick && !queue.isEmpty()) {
-            ModelBuildJob job = queue.peek();
+            BuildJob job = queue.peek();
             try {
                 while (placed < maxBlocksPerTick && !job.isDone()) {
-                    if (job.placeNext()) {
+                    if (job.processNext()) {
                         placed++;
                     }
                 }
             } catch (RuntimeException e) {
-                // 放置异常：终止当前构建（不回滚已放置方块），继续处理后续任务
                 queue.poll();
                 job.notifyAborted(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
                 continue;

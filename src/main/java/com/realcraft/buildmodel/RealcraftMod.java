@@ -1,6 +1,7 @@
 package com.realcraft.buildmodel;
 
 import com.realcraft.buildmodel.command.BuildModelCommand;
+import com.realcraft.buildmodel.command.RollbackCommand;
 import com.realcraft.buildmodel.queue.BuildTickHandler;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ public class RealcraftMod implements ModInitializer {
     @Override
     public void onInitialize() {
         BuildModelCommand.register();
+        RollbackCommand.register();
         BuildTickHandler.register();
         LOGGER.info("[Realcraft] Voxel Builder plugin initialized.");
     }

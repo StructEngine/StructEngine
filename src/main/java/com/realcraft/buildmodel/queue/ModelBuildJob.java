@@ -15,7 +15,7 @@ import net.minecraft.world.World;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ModelBuildJob {
+public class ModelBuildJob implements BuildJob {
     private final ServerPlayerEntity player;
     private final World world;
     private final List<BlockPlacement> placements;
@@ -63,30 +63,37 @@ public class ModelBuildJob {
         return player;
     }
 
+    public List<BlockPlacement> getPlacements() {
+        return placements;
+    }
+
     public int getTotal() {
         return placements.size();
     }
 
+    @Override
     public boolean isDone() {
         return index >= placements.size();
     }
 
-    public boolean placeNext() {
+    @Override
+    public boolean processNext() {
         if (isDone()) {
             return false;
         }
         BlockPlacement placement = placements.get(index++);
-        // 放置只依赖创建任务时捕获的世界，玩家离线仍继续完成
         world.setBlockState(placement.getPos(), placement.getState(), 3);
         return true;
     }
 
+    @Override
     public void notifyComplete() {
         if (!player.isDisconnected()) {
             player.sendMessage(Text.literal("模型构建完毕！共 " + placements.size() + " 个方块。").withColor(0xFF55FF55));
         }
     }
 
+    @Override
     public void notifyAborted(String reason) {
         if (!player.isDisconnected()) {
             player.sendMessage(Text.literal("[buildmodel] 模型构建中断: " + reason).withColor(0xFFFF5555));
