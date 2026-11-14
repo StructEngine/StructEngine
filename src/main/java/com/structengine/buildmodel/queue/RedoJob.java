@@ -1,7 +1,7 @@
-package com.realcraft.buildmodel.queue;
+package com.structengine.buildmodel.queue;
 
-import com.realcraft.buildmodel.model.BlockPlacement;
-import com.realcraft.buildmodel.service.BuildHistoryManager;
+import com.structengine.buildmodel.model.BlockPlacement;
+import com.structengine.buildmodel.service.BuildHistoryManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;

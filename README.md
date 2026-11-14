@@ -1,4 +1,4 @@
-# Realcraft (Realcraft Voxel Builder)
+# StructEngine (StructEngine Voxel Builder)
 
 一个基于 [Fabric](https://fabricmc.net/) 的 Minecraft 模组，可通过游戏内命令从远程 JSON 数据源拉取体素模型数据，并在世界中自动批量构建方块模型。
 
@@ -52,8 +52,8 @@
 
 构建成功后位于 `build/libs/`：
 
-- `realcraft-1.0.0.jar` —— 主模组文件（放入 `mods/` 目录）
-- `realcraft-1.0.0-sources.jar` —— 源码包（可选）
+- `structengine-1.0.0.jar` —— 主模组文件（放入 `mods/` 目录）
+- `structengine-1.0.0-sources.jar` —— 源码包（可选）
 
 ### 常用命令
 
@@ -67,7 +67,7 @@
 
 1. 安装 [Fabric Loader](https://fabricmc.net/use/)（1.21.11 对应版本，如 `fabric-server-mc.1.21.11-loader.0.19.5-launcher.1.1.2.jar`）并启动一次
 2. 将 [Fabric API](https://modrinth.com/mod/fabric-api)（`0.141.6+1.21.11`）放入 `mods/` 目录
-3. 将构建出的 `realcraft-1.0.0.jar` 放入 `mods/` 目录
+3. 将构建出的 `structengine-1.0.0.jar` 放入 `mods/` 目录
 4. 启动服务端/客户端
 
 ## 使用方法
@@ -88,7 +88,7 @@
 
 ### JSON 数据格式
 
-请求的 URL 需返回一个 JSON 数组，每个元素描述一个方块（紧凑数组，元素顺序为 `id, x, y, z`）。后端（realcraft-platform）产出的即为**紧凑单行**二维数组：
+请求的 URL 需返回一个 JSON 数组，每个元素描述一个方块（紧凑数组，元素顺序为 `id, x, y, z`）。后端（structengine-platform）产出的即为**紧凑单行**二维数组：
 
 ```json
 [["minecraft:stone",0,0,0],["minecraft:cobblestone",1,0,0],["minecraft:glass",0,1,0]]
@@ -116,8 +116,8 @@
 ## 项目结构
 
 ```
-src/main/java/com/realcraft/buildmodel/
-├── RealcraftMod.java          # 模组入口，注册命令与 tick 处理器
+src/main/java/com/structengine/buildmodel/
+├── StructEngineMod.java       # 模组入口，注册命令与 tick 处理器
 ├── command/
 │   └── BuildModelCommand.java # /buildmodel 命令注册与参数解析
 ├── service/

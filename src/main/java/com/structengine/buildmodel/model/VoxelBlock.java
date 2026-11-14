@@ -1,4 +1,4 @@
-package com.realcraft.buildmodel.model;
+package com.structengine.buildmodel.model;
 
 public class VoxelBlock {
     private final String id;

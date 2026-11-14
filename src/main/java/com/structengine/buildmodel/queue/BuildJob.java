@@ -1,4 +1,4 @@
-package com.realcraft.buildmodel.queue;
+package com.structengine.buildmodel.queue;
 
 public interface BuildJob {
     boolean isDone();

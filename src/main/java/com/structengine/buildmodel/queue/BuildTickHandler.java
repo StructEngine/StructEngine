@@ -1,4 +1,4 @@
-package com.realcraft.buildmodel.queue;
+package com.structengine.buildmodel.queue;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 

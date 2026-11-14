@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "realcraft",
+  "id": "structengine",
   "version": "${version}",
-  "name": "Realcraft Voxel Builder",
+  "name": "StructEngine Voxel Builder",
   "description": "Build voxel models from remote JSON data via an in-game command (any player).",
   "authors": [
     "Administrator"
@@ -13,7 +13,7 @@
   "environment": "server",
   "entrypoints": {
     "main": [
-      "com.realcraft.buildmodel.RealcraftMod"
+      "com.structengine.buildmodel.StructEngineMod"
     ]
   },
   "depends": {

@@ -1,10 +1,10 @@
-package com.realcraft.buildmodel.service;
+package com.structengine.buildmodel.service;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import com.realcraft.buildmodel.model.VoxelBlock;
+import com.structengine.buildmodel.model.VoxelBlock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

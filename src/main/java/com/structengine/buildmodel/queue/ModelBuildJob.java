@@ -1,7 +1,7 @@
-package com.realcraft.buildmodel.queue;
+package com.structengine.buildmodel.queue;
 
-import com.realcraft.buildmodel.model.BlockPlacement;
-import com.realcraft.buildmodel.model.VoxelBlock;
+import com.structengine.buildmodel.model.BlockPlacement;
+import com.structengine.buildmodel.model.VoxelBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;

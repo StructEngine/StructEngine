@@ -1,4 +1,4 @@
-package com.realcraft.buildmodel.model;
+package com.structengine.buildmodel.model;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;

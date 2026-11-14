@@ -1,12 +1,12 @@
-package com.realcraft.buildmodel.service;
+package com.structengine.buildmodel.service;
 
-import com.realcraft.buildmodel.model.BlockPlacement;
-import com.realcraft.buildmodel.model.RegionSnapshot;
-import com.realcraft.buildmodel.queue.BuildRecord;
-import com.realcraft.buildmodel.queue.BuildTaskQueue;
-import com.realcraft.buildmodel.queue.ModelBuildJob;
-import com.realcraft.buildmodel.queue.RollbackJob;
-import com.realcraft.buildmodel.queue.RedoJob;
+import com.structengine.buildmodel.model.BlockPlacement;
+import com.structengine.buildmodel.model.RegionSnapshot;
+import com.structengine.buildmodel.queue.BuildRecord;
+import com.structengine.buildmodel.queue.BuildTaskQueue;
+import com.structengine.buildmodel.queue.ModelBuildJob;
+import com.structengine.buildmodel.queue.RollbackJob;
+import com.structengine.buildmodel.queue.RedoJob;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
@@ -116,7 +116,7 @@ public class BuildHistoryManager {
         if (player.isDisconnected()) {
             return;
         }
-        player.sendMessage(Text.literal("[realcraft] " + message).withColor(0xFFFF5555));
+        player.sendMessage(Text.literal("[StructEngine] " + message).withColor(0xFFFF5555));
     }
 
     private static class PlayerHistory {

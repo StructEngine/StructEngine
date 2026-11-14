@@ -1,4 +1,4 @@
-package com.realcraft.buildmodel.service;
+package com.structengine.buildmodel.service;
 
 public class ModelDownloadException extends RuntimeException {
 

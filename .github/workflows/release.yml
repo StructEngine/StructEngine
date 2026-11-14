@@ -30,7 +30,7 @@ jobs:
       - name: Stage plugin jar
         run: |
           mkdir -p staging
-          PLUGIN_JAR=$(ls build/libs/realcraft-*.jar | grep -v -- '-sources.jar')
+          PLUGIN_JAR=$(ls build/libs/structengine-*.jar | grep -v -- '-sources.jar')
           cp "$PLUGIN_JAR" staging/
 
       - name: Create Release

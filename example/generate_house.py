@@ -1,4 +1,4 @@
-"""Generate a house.json voxel model template for the Realcraft mod.
+"""Generate a house.json voxel model template for the StructEngine mod.
 
 Usage:
     python generate_house.py
@@ -49,7 +49,7 @@ add(WIDTH // 2, WALL_HEIGHT, DEPTH // 2, "minecraft:lantern")
 
 out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "house.json")
 with open(out, "w", encoding="utf-8") as f:
-    # 紧凑单行二维数组，与后端 realcraft-platform 的 ModelData.serialize() 产物一致
+    # 紧凑单行二维数组，与后端 structengine-platform 的 ModelData.serialize() 产物一致
     json.dump(blocks, f, ensure_ascii=False, separators=(",", ":"))
 
 print(f"generated {len(blocks)} blocks -> {out}")

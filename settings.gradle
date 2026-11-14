@@ -9,4 +9,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'realcraft'
+rootProject.name = 'structengine'

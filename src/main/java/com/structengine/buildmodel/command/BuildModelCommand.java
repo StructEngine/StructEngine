@@ -1,7 +1,7 @@
-package com.realcraft.buildmodel.command;
+package com.structengine.buildmodel.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
-import com.realcraft.buildmodel.service.ModelBuildService;
+import com.structengine.buildmodel.service.ModelBuildService;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
