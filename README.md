@@ -29,8 +29,8 @@
 
 ### 前置条件
 
-- **JDK 21**：`gradle.properties` 中的 `org.gradle.java.home` 已指向 JDK 21 目录；若移除该项，则需确保系统 `JAVA_HOME` 指向 JDK 21
-- **Gradle**：无需手动安装，项目通过 Gradle Wrapper 自动下载 `9.5.1`
+- **JDK 21**：默认使用系统 `JAVA_HOME`（需指向 JDK 21）；若 `JAVA_HOME` 未指向 JDK 21，可取消 `gradle.properties` 中 `org.gradle.java.home` 的注释并填入本机路径，或在命令行追加 `-Dorg.gradle.java.home=<JDK21 路径>`
+- **Gradle**：无需手动安装，项目通过 Gradle Wrapper 自动下载 `9.5.1`；请勿使用发行版自带的旧版 Gradle（如 4.4.1），Fabric Loom 1.17 要求 Gradle 8.11 及以上
 
 ### 编译命令
 
