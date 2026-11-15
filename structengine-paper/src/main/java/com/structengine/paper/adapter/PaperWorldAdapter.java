@@ -61,12 +61,16 @@ public class PaperWorldAdapter implements IWorldAdapter {
 
     @Override
     public boolean isOnline(PlayerRef player) {
-        return player(player).isOnline();
+        return player instanceof PaperPlayerRef ref && ref.handle().isOnline();
     }
 
     @Override
     public void sendMessage(PlayerRef player, String message, int color) {
-        player(player).sendMessage(Component.text(message).color(TextColor.color(color & 0xFFFFFF)));
+        if (!(player instanceof PaperPlayerRef ref)) {
+            // 远程 BUILD 的玩家可能离线；构建继续执行，仅跳过聊天反馈。
+            return;
+        }
+        ref.handle().sendMessage(Component.text(message).color(TextColor.color(color & 0xFFFFFF)));
     }
 
     private static Material resolveMaterial(String blockId) {
@@ -82,7 +86,10 @@ public class PaperWorldAdapter implements IWorldAdapter {
     }
 
     private static Player player(PlayerRef player) {
-        return ((PaperPlayerRef) player).handle();
+        if (player instanceof PaperPlayerRef ref) {
+            return ref.handle();
+        }
+        throw new IllegalArgumentException("离线玩家没有在线世界位置");
     }
 
     private static Block block(WorldRef world, BlockPosition pos) {

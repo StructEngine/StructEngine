@@ -68,12 +68,16 @@ public class FabricWorldAdapter implements IWorldAdapter {
 
     @Override
     public boolean isOnline(PlayerRef player) {
-        return !player(player).isDisconnected();
+        return player instanceof FabricPlayerRef ref && !ref.handle().isDisconnected();
     }
 
     @Override
     public void sendMessage(PlayerRef player, String message, int color) {
-        player(player).sendMessage(Text.literal(message).withColor(color));
+        if (!(player instanceof FabricPlayerRef ref)) {
+            // 远程 BUILD 的玩家可能离线；构建继续执行，仅跳过聊天反馈。
+            return;
+        }
+        ref.handle().sendMessage(Text.literal(message).withColor(color));
     }
 
     private static BlockState resolveBlockState(String blockId) {
@@ -92,7 +96,10 @@ public class FabricWorldAdapter implements IWorldAdapter {
     }
 
     private static net.minecraft.server.network.ServerPlayerEntity player(PlayerRef player) {
-        return ((FabricPlayerRef) player).handle();
+        if (player instanceof FabricPlayerRef ref) {
+            return ref.handle();
+        }
+        throw new IllegalArgumentException("离线玩家没有在线世界位置");
     }
 
     private static World world(WorldRef world) {

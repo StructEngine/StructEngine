@@ -67,12 +67,16 @@ public class NeoForgeWorldAdapter implements IWorldAdapter {
 
     @Override
     public boolean isOnline(PlayerRef player) {
-        return !player(player).hasDisconnected();
+        return player instanceof NeoForgePlayerRef ref && !ref.handle().hasDisconnected();
     }
 
     @Override
     public void sendMessage(PlayerRef player, String message, int color) {
-        player(player).sendSystemMessage(Component.literal(message).withColor(color));
+        if (!(player instanceof NeoForgePlayerRef ref)) {
+            // 远程 BUILD 的玩家可能离线；构建继续执行，仅跳过聊天反馈。
+            return;
+        }
+        ref.handle().sendSystemMessage(Component.literal(message).withColor(color));
     }
 
     private static BlockState resolveBlockState(String blockId) {
@@ -91,7 +95,10 @@ public class NeoForgeWorldAdapter implements IWorldAdapter {
     }
 
     private static ServerPlayer player(PlayerRef player) {
-        return ((NeoForgePlayerRef) player).handle();
+        if (player instanceof NeoForgePlayerRef ref) {
+            return ref.handle();
+        }
+        throw new IllegalArgumentException("离线玩家没有在线世界位置");
     }
 
     private static Level world(WorldRef world) {
