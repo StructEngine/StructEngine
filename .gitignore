@@ -38,8 +38,9 @@ target/
 hs_err_pid*
 replay_pid*
 
-# ===== Fabric Loom (Minecraft) =====
+# ===== Fabric Loom / NeoGradle 运行配置（自动生成） =====
 run/
+runs/
 
 
 # ===== Local AI tools =====
