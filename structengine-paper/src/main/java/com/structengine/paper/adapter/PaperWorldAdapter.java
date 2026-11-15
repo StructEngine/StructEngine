@@ -55,6 +55,11 @@ public class PaperWorldAdapter implements IWorldAdapter {
     }
 
     @Override
+    public int highestBlockYAt(WorldRef world, int x, int z) {
+        return ((PaperWorldRef) world).handle().getHighestBlockYAt(x, z);
+    }
+
+    @Override
     public boolean isOnline(PlayerRef player) {
         return player(player).isOnline();
     }

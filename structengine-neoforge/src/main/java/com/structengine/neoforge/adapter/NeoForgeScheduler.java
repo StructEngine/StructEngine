@@ -16,6 +16,11 @@ public class NeoForgeScheduler implements IServerScheduler {
         this.server = server;
     }
 
+    /** 当前服务端实例；未启动时为 null。 */
+    public MinecraftServer server() {
+        return server;
+    }
+
     @Override
     public void runOnServerThread(Runnable task) {
         MinecraftServer current = this.server;

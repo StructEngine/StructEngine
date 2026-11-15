@@ -27,6 +27,12 @@ public interface IWorldAdapter {
     /** 按快照还原方块状态（对应原 {@code setBlockState(pos, state, 3)}）。 */
     void restoreBlock(WorldRef world, BlockPosition pos, BlockStateSnapshot snapshot);
 
+    /**
+     * 查询指定世界 (x,z) 的最高非空气方块 Y。
+     * <p>必须在服务端主线程调用；区块未加载时应由平台实现同步加载后查询。</p>
+     */
+    int highestBlockYAt(WorldRef world, int x, int z);
+
     /** 玩家是否仍在线（原 {@code !player.isDisconnected()}）。 */
     boolean isOnline(PlayerRef player);
 

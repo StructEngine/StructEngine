@@ -17,6 +17,11 @@ public class FabricScheduler implements IServerScheduler {
         ServerLifecycleEvents.SERVER_STOPPED.register(stopped -> this.server = null);
     }
 
+    /** 当前服务端实例；未启动时为 null。 */
+    public MinecraftServer server() {
+        return server;
+    }
+
     @Override
     public void runOnServerThread(Runnable task) {
         MinecraftServer current = this.server;

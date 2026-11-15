@@ -14,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
  * NeoForge 世界适配器：与 Fabric 实现一一对应，仅替换为 Mojang 映射 API。
@@ -53,6 +54,15 @@ public class NeoForgeWorldAdapter implements IWorldAdapter {
     @Override
     public void restoreBlock(WorldRef world, BlockPosition pos, BlockStateSnapshot snapshot) {
         world(world).setBlock(toBlockPos(pos), ((NeoForgeBlockStateSnapshot) snapshot).handle(), 3);
+    }
+
+    @Override
+    public int highestBlockYAt(WorldRef world, int x, int z) {
+        Level level = world(world);
+        // 主线程同步加载区块，避免未加载区块返回世界底部。
+        level.getChunk(x >> 4, z >> 4);
+        int top = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z) - 1;
+        return Math.max(level.getMinY(), top);
     }
 
     @Override

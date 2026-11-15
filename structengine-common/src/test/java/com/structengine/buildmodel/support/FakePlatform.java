@@ -36,6 +36,7 @@ public final class FakePlatform implements IWorldAdapter, IServerScheduler {
     public final List<String> restored = new ArrayList<>();
     public final List<String> messages = new ArrayList<>();
     public final Deque<Runnable> tickHandlers = new ArrayDeque<>();
+    public int topY = 64;
 
     public FakePlatform(UUID playerId, BlockPosition playerBlockPos, String... placeableIds) {
         this.player = new FakePlayer(playerId);
@@ -79,6 +80,11 @@ public final class FakePlatform implements IWorldAdapter, IServerScheduler {
     @Override
     public void restoreBlock(WorldRef world, BlockPosition pos, BlockStateSnapshot snapshot) {
         restored.add(pos.x() + "," + pos.y() + "," + pos.z() + "<-" + ((FakeSnapshot) snapshot).value());
+    }
+
+    @Override
+    public int highestBlockYAt(WorldRef world, int x, int z) {
+        return topY;
     }
 
     @Override

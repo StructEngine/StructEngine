@@ -11,5 +11,7 @@ dependencies {
     compileOnly "com.google.code.gson:gson:${gson_version}"
 
     testImplementation "org.junit.jupiter:junit-jupiter:${junit_version}"
+    testImplementation "com.google.code.gson:gson:${gson_version}"
+    testImplementation "org.java-websocket:Java-WebSocket:1.6.0"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }

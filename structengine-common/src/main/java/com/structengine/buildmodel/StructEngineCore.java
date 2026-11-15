@@ -18,6 +18,7 @@ public final class StructEngineCore {
     private final IServerScheduler scheduler;
     private final BuildTaskQueue taskQueue;
     private final BuildHistoryManager historyManager;
+    private final ModelDownloader downloader;
     private final ModelBuildService buildService;
 
     public StructEngineCore(IWorldAdapter worldAdapter, IServerScheduler scheduler) {
@@ -25,7 +26,8 @@ public final class StructEngineCore {
         this.scheduler = scheduler;
         this.taskQueue = new BuildTaskQueue();
         this.historyManager = new BuildHistoryManager(worldAdapter, taskQueue);
-        this.buildService = new ModelBuildService(new ModelDownloader(), worldAdapter, scheduler,
+        this.downloader = new ModelDownloader();
+        this.buildService = new ModelBuildService(downloader, worldAdapter, scheduler,
                 historyManager, taskQueue);
     }
 
@@ -52,5 +54,10 @@ public final class StructEngineCore {
 
     public ModelBuildService buildService() {
         return buildService;
+    }
+
+    /** 供远程构建复用同一个 HTTP 下载器（连接池与超时策略保持一致）。 */
+    public ModelDownloader downloader() {
+        return downloader;
     }
 }

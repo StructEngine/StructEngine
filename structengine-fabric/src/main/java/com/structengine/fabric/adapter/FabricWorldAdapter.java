@@ -12,7 +12,9 @@ import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.WorldChunk;
 
 /**
  * Fabric 世界适配器：承载原业务代码中直接调用的 MC API。
@@ -52,6 +54,15 @@ public class FabricWorldAdapter implements IWorldAdapter {
     @Override
     public void restoreBlock(WorldRef world, BlockPosition pos, BlockStateSnapshot snapshot) {
         world(world).setBlockState(toBlockPos(pos), ((FabricBlockStateSnapshot) snapshot).handle(), 3);
+    }
+
+    @Override
+    public int highestBlockYAt(WorldRef world, int x, int z) {
+        World level = world(world);
+        // 主线程同步加载区块，避免未加载区块返回世界底部。
+        WorldChunk chunk = level.getChunk(x >> 4, z >> 4);
+        int top = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE).get(x & 15, z & 15) - 1;
+        return Math.max(level.getBottomY(), top);
     }
 
     @Override

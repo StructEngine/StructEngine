@@ -13,6 +13,8 @@
 - **离线续建**：任务一旦入队，即使发起玩家离线也会继续走完队列
 - **异常隔离**：构建过程中出现异常时中断当前模型（不回滚已放置方块），不影响队列中的其他任务
 - **构建反馈**：下载、开始构建、完成均会以彩色消息反馈给执行命令的玩家
+- **Platform 远程构建**：通过 WebSocket 长连接响应 `QUERY_Y` 高度探测，接收 `BUILD` 后按 Platform 下发的绝对坐标构建；带心跳、断线重连与主线程安全调度
+- **核心逻辑零改动**：远程构建只新增网络层与任务装配桥接，原有 JSON 解析、分批放置、回滚/恢复机制完全保留
 
 ## 环境要求
 
@@ -107,6 +109,58 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 
 - 原点偏移：`x + 1`、`y + 0`、`z + 1`（相对玩家方块坐标）
 
+## 远程 WebSocket 构建（Platform 联动）
+
+游戏服启动后可以主动连接 `StructEnginePlatform`，由 Web 地图选点触发构建。网络层位于 `structengine-common` 的 `remote` 包，三个平台共用。
+
+### 配置
+
+通过环境变量（或同名 JVM 系统属性）配置：
+
+| 变量 | 含义 | 必填 |
+|------|------|------|
+| `STRUCTENGINE_WS_URL` | Platform WebSocket 地址，如 `ws://platform:8080/ws/game` | 否（不配置则仅保留原命令功能） |
+| `STRUCTENGINE_SERVER_ID` | 本服唯一标识，多服部署时必填，默认 `default` | 否 |
+| `STRUCTENGINE_WS_TOKEN` | 握手令牌，对应 Platform 的 `STRUCTENGINE_GAME_TOKEN` | 生产建议 |
+| `STRUCTENGINE_REMOTE_ENABLED` | 设为 `false` 可关闭远程网络层 | 否 |
+
+示例（Paper）：
+
+```bash
+STRUCTENGINE_WS_URL=ws://platform.example.com:8080/ws/game \
+STRUCTENGINE_SERVER_ID=survival \
+STRUCTENGINE_WS_TOKEN=change-me \
+java -jar paper-1.21.11.jar
+```
+
+> Fabric / NeoForge 在服务端启动完成后才建立连接，停服时自动关闭；Paper 在 `onEnable` / `onDisable` 中管理。
+
+### 链路与线程模型
+
+```
+Platform QUERY_Y(taskId,x,z)
+   → WS 网络线程解析
+   → IServerScheduler.runTask 切到服务端主线程
+   → IWorldAdapter.highestBlockYAt(world,x,z)
+   → 主线程回传 RESPONSE_Y(taskId,y)
+   → Platform 生成模型并下发 BUILD(taskId,playerName,x,y,z,modelUrl)
+   → 主线程解析玩家/世界，异步 HttpClient 下载 JSON
+   → AbsoluteBuildService 生成绝对坐标任务
+   → 压入原有 BuildTaskQueue（分批放置 + RegionSnapshot 回滚记录）
+```
+
+- **不再计算高度**：`BUILD` 已带完整 `(x,y,z)`，插件只做 `origin + 模型相对偏移`。
+- **主线程安全**：QUERY_Y 与任务装配均通过 `IServerScheduler` 投递，WS 线程不直接触碰 Minecraft API。
+- **玩家离线**：仍会入队并完成构建，仅跳过聊天反馈；回滚历史以玩家 UUID 记录。
+- **心跳/重连**：每 20 秒 `PING`，60 秒无下行消息判定假死；断线按 1s→30s 指数退避重连。
+- **鉴权**：配置令牌后，握手请求携带 `X-StructEngine-Token` 请求头。
+
+### 远程构建与原有命令的关系
+
+- `/buildmodel <url>` 保持原行为：以执行玩家位置为原点，偏移 `x+1 / y+0 / z+1`。
+- 远程 `BUILD` 使用 Platform 的绝对原点，不读取玩家位置，也不会覆盖原有坐标映射代码。
+- 两者共用同一 `BuildTaskQueue`、`BuildTickHandler`、`RegionSnapshot` 与 `BuildHistoryManager`，因此 `/rollback`、`/redo` 对远程任务同样生效。
+
 ### JSON 数据格式
 
 请求的 URL 需返回一个 JSON 数组，每个元素描述一个方块（紧凑数组，元素顺序为 `id, x, y, z`）。后端（structengine-platform）产出的即为**紧凑单行**二维数组：
@@ -120,7 +174,7 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 | 数组下标 | 类型 | 说明 |
 | --- | --- | --- |
 | 0 | string | 方块注册 ID，如 `minecraft:stone` |
-| 1 / 2 / 3 | int | 相对原点（玩家位置）的偏移坐标 x / y / z |
+| 1 / 2 / 3 | int | 相对构建原点的偏移坐标 x / y / z |
 
 注意事项：
 
@@ -133,6 +187,7 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 - **大小限制**：响应体超过 **16MB** 视为获取失败
 - **异常处理**：构建过程中出现异常会中断当前模型并提示错误，已放置的方块不会回滚
 - **离线续建**：任务入队后，即使发起玩家离线，队列仍会继续完成该构建
+- **远程构建**：`/buildmodel` 以玩家位置为原点；Platform 下发的 `BUILD` 以消息中的 `(x,y,z)` 为原点，JSON 内坐标作为相对偏移叠加
 
 ## 项目结构
 
@@ -142,14 +197,19 @@ StructEngine (Root)
 │   └── com/structengine/buildmodel/
 │       ├── StructEngineCore.java      # 组合根：装配适配器与核心业务
 │       ├── spi/                       # 平台抽象（依赖倒置）
-│       │   ├── IWorldAdapter.java     # 方块读写 / 玩家位置 / 消息发送
+│       │   ├── IWorldAdapter.java     # 方块读写 / 玩家位置 / 高度查询 / 消息发送
 │       │   ├── IServerScheduler.java  # 主线程投递 / tick 回调
 │       │   ├── PlayerRef.java          # 玩家句柄
 │       │   ├── WorldRef.java           # 世界句柄
 │       │   └── BlockStateSnapshot.java # 方块状态快照句柄
 │       ├── model/                     # VoxelBlock / BlockPosition / BlockPlacement / RegionSnapshot
 │       ├── queue/                     # BuildTaskQueue / ModelBuildJob / RollbackJob / RedoJob / BuildTickHandler
-│       └── service/                   # ModelDownloader（HTTP+JSON）/ ModelBuildService / BuildHistoryManager
+│       ├── service/                   # ModelDownloader（HTTP+JSON）/ ModelBuildService / BuildHistoryManager
+│       └── remote/                    # WS 客户端 / 协议 DTO / CoreCommandBridge / AbsoluteBuildService
+│           ├── GameServerWsClient.java    # 连接、心跳、重连、消息分发
+│           ├── CoreCommandBridge.java     # 网络指令 → 主线程
+│           ├── AbsoluteBuildService.java  # 异步下载 → 绝对坐标任务入队
+│           └── AbsoluteModelBuildJob.java # 复用 BuildJob 接口的绝对坐标任务
 ├── structengine-fabric        # Fabric 适配层（fabric-loom + fabric-api + common）
 │   └── com/structengine/fabric/
 │       ├── StructEngineFabric.java    # ModInitializer 入口
@@ -172,6 +232,7 @@ StructEngine (Root)
 - **依赖方向**：`fabric / neoforge / paper` → `common`，`common` 不依赖任何平台代码。
 - **依赖倒置**：核心业务只依赖 `IWorldAdapter`、`IServerScheduler` 两个接口；平台差异全部收敛在适配层的 `*Ref` 与 `*Adapter` 实现中。
 - **组合根**：各平台入口创建唯一的 `StructEngineCore`，在其中装配适配器、任务队列与历史管理器，并把 service 交给命令层。
+- **网络层**：`remote` 包只依赖 JDK 原生 `HttpClient` 与 Gson（服务端运行时自带），通过 `GameServerContext` 解析玩家/世界，通过 `CoreCommandBridge` 回到主线程。
 
 ## License
 
