@@ -61,7 +61,8 @@ public class FabricWorldAdapter implements IWorldAdapter {
         World level = world(world);
         // 主线程同步加载区块，避免未加载区块返回世界底部。
         WorldChunk chunk = level.getChunk(x >> 4, z >> 4);
-        int top = chunk.getHeightmap(Heightmap.Type.WORLD_SURFACE).get(x & 15, z & 15) - 1;
+        // sampleHeightmap 在高度图未初始化时会自动补齐，返回值即最高非空气方块 Y。
+        int top = chunk.sampleHeightmap(Heightmap.Type.WORLD_SURFACE, x & 15, z & 15);
         return Math.max(level.getBottomY(), top);
     }
 
