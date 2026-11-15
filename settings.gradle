@@ -4,9 +4,22 @@ pluginManagement {
             name = 'Fabric'
             url = 'https://maven.fabricmc.net/'
         }
+        maven {
+            name = 'NeoForged'
+            url = 'https://maven.neoforged.net/releases'
+        }
+        maven {
+            name = 'PaperMC'
+            url = 'https://repo.papermc.io/repository/maven-public/'
+        }
         mavenCentral()
         gradlePluginPortal()
     }
 }
 
-rootProject.name = 'structengine'
+rootProject.name = 'StructEngine'
+
+include 'structengine-common'
+include 'structengine-fabric'
+include 'structengine-neoforge'
+include 'structengine-paper'

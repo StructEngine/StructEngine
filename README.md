@@ -1,6 +1,6 @@
 # StructEngine (StructEngine Voxel Builder)
 
-一个基于 [Fabric](https://fabricmc.net/) 的 Minecraft 模组，可通过游戏内命令从远程 JSON 数据源拉取体素模型数据，并在世界中自动批量构建方块模型。
+一个多平台（[Fabric](https://fabricmc.net/) / NeoForge / Paper）的 Minecraft 服务端组件，可通过游戏内命令从远程 JSON 数据源拉取体素模型数据，并在世界中自动批量构建方块模型。核心业务逻辑与平台 API 通过 SPI 完全解耦，一套逻辑三端复用。
 
 ## 功能特性
 
@@ -20,10 +20,11 @@
 | --- | --- |
 | Java | 21+ |
 | Minecraft | 1.21.11 |
-| Fabric Loader | >= 0.19.5 |
-| Fabric API | 0.141.6+1.21.11 |
+| Fabric Loader / API | >= 0.19.5 / 0.141.6+1.21.11 |
+| NeoForge | 21.11.x |
+| Paper | 1.21.11 |
 
-> 本模组为**纯服务端**组件（`fabric.mod.json` 中 `environment` 为 `server`），无需在客户端安装。
+> 三个平台共用同一套核心逻辑（`structengine-common`），均为**纯服务端**组件：Fabric 侧 `fabric.mod.json` 的 `environment` 为 `server`，无需客户端安装。
 
 ## 编译
 
@@ -34,41 +35,61 @@
 
 ### 编译命令
 
-在项目根目录执行：
+在项目根目录执行（Windows 用 `gradlew.bat`，Linux / macOS 用 `./gradlew`）：
 
-**Windows（PowerShell / CMD）**
 ```bash
-.\gradlew.bat build
-```
-
-**Linux / macOS**
-```bash
+# 构建全部平台（需可访问 fabric / neoforged / papermc 仓库）
 ./gradlew build
+
+# 只构建单个平台（限定网络环境下建议加 --configure-on-demand，避免配置其他平台模块）
+./gradlew :structengine-common:build
+./gradlew :structengine-fabric:build
+./gradlew :structengine-neoforge:build
+./gradlew :structengine-paper:build
 ```
 
-首次构建会自动下载 Gradle 发行版、Minecraft 1.21.11 及依赖，耗时较长，请耐心等待。
+首次构建会自动下载 Gradle 发行版、Minecraft 1.21.11 及各平台依赖，耗时较长，请耐心等待。
+NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.papermc.io`。
 
 ### 产物位置
 
-构建成功后位于 `build/libs/`：
+各模块产物位于自己的 `build/libs/`：
 
-- `structengine-1.0.0.jar` —— 主模组文件（放入 `mods/` 目录）
-- `structengine-1.0.0-sources.jar` —— 源码包（可选）
+| 产物 | 用途 |
+| --- | --- |
+| `structengine-fabric/build/libs/structengine-fabric-1.0.0.jar` | Fabric 模组（放入 `mods/`，已通过 Jar-in-Jar 内置 common） |
+| `structengine-neoforge/build/libs/structengine-neoforge-1.0.0.jar` | NeoForge 模组（放入 `mods/`） |
+| `structengine-paper/build/libs/structengine-paper-1.0.0.jar` | Paper 插件（放入 `plugins/`，已内含 common 逻辑类） |
+| `structengine-common/build/libs/structengine-common-1.0.0.jar` | 核心逻辑库（纯 Java，无需单独安装） |
 
 ### 常用命令
 
 | 命令 | 说明 |
 | --- | --- |
-| `.\gradlew.bat build` | 完整构建（编译 + 打包） |
-| `.\gradlew.bat clean build` | 清理后重新构建 |
-| `.\gradlew.bat remapJar` | 仅重新打包模组 jar |
+| `./gradlew build` | 完整构建（全部模块编译 + 打包） |
+| `./gradlew clean build` | 清理后重新构建 |
+| `./gradlew :structengine-fabric:remapJar` | 仅重新打包 Fabric 模组 jar |
 
 ## 安装
 
+**Fabric**
+
 1. 安装 [Fabric Loader](https://fabricmc.net/use/)（1.21.11 对应版本，如 `fabric-server-mc.1.21.11-loader.0.19.5-launcher.1.1.2.jar`）并启动一次
 2. 将 [Fabric API](https://modrinth.com/mod/fabric-api)（`0.141.6+1.21.11`）放入 `mods/` 目录
-3. 将构建出的 `structengine-1.0.0.jar` 放入 `mods/` 目录
+3. 将 `structengine-fabric-1.0.0.jar` 放入 `mods/` 目录
 4. 启动服务端/客户端
+
+**NeoForge**
+
+1. 安装 NeoForge 21.11.x 服务端
+2. 将 `structengine-neoforge-1.0.0.jar` 放入 `mods/` 目录
+3. 启动服务端
+
+**Paper**
+
+1. 准备 Paper 1.21.11 服务端
+2. 将 `structengine-paper-1.0.0.jar` 放入 `plugins/` 目录
+3. 启动服务端
 
 ## 使用方法
 
@@ -116,22 +137,41 @@
 ## 项目结构
 
 ```
-src/main/java/com/structengine/buildmodel/
-├── StructEngineMod.java       # 模组入口，注册命令与 tick 处理器
-├── command/
-│   └── BuildModelCommand.java # /buildmodel 命令注册与参数解析
-├── service/
-│   ├── ModelBuildService.java # 构建流程编排：下载 -> 入队
-│   ├── ModelDownloader.java   # HTTP 异步下载、URL 校验、大小限制与 JSON 解析
-│   └── ModelDownloadException.java
-├── model/
-│   ├── VoxelBlock.java        # 体素方块数据（id/x/y/z）
-│   └── BlockPlacement.java    # 世界内实际放置位置与方块状态
-└── queue/
-    ├── BuildTaskQueue.java    # 构建任务队列
-    ├── ModelBuildJob.java     # 单个构建任务（含坐标换算、方块解析）
-    └── BuildTickHandler.java  # 每 tick 驱动队列放置方块
+StructEngine (Root)
+├── structengine-common        # 核心逻辑层：纯 Java 21，零 MC API 依赖
+│   └── com/structengine/buildmodel/
+│       ├── StructEngineCore.java      # 组合根：装配适配器与核心业务
+│       ├── spi/                       # 平台抽象（依赖倒置）
+│       │   ├── IWorldAdapter.java     # 方块读写 / 玩家位置 / 消息发送
+│       │   ├── IServerScheduler.java  # 主线程投递 / tick 回调
+│       │   ├── PlayerRef.java          # 玩家句柄
+│       │   ├── WorldRef.java           # 世界句柄
+│       │   └── BlockStateSnapshot.java # 方块状态快照句柄
+│       ├── model/                     # VoxelBlock / BlockPosition / BlockPlacement / RegionSnapshot
+│       ├── queue/                     # BuildTaskQueue / ModelBuildJob / RollbackJob / RedoJob / BuildTickHandler
+│       └── service/                   # ModelDownloader（HTTP+JSON）/ ModelBuildService / BuildHistoryManager
+├── structengine-fabric        # Fabric 适配层（fabric-loom + fabric-api + common）
+│   └── com/structengine/fabric/
+│       ├── StructEngineFabric.java    # ModInitializer 入口
+│       ├── adapter/                   # FabricWorldAdapter / FabricScheduler / *Ref
+│       └── command/                   # /buildmodel、/rollback、/redo（Brigadier）
+├── structengine-neoforge      # NeoForge 适配层（NeoGradle userdev + neoforge + common）
+│   └── com/structengine/neoforge/
+│       ├── StructEngineNeoForge.java  # @Mod 入口
+│       ├── adapter/                   # NeoForgeWorldAdapter / NeoForgeScheduler / *Ref
+│       └── command/                   # Brigadier 命令注册
+└── structengine-paper         # Paper 插件适配层（paper-api + common）
+    └── com/structengine/paper/
+        ├── StructEnginePaperPlugin.java  # JavaPlugin 入口
+        ├── adapter/                      # PaperWorldAdapter / PaperScheduler / *Ref
+        └── command/                      # Bukkit CommandExecutor
 ```
+
+### 架构说明
+
+- **依赖方向**：`fabric / neoforge / paper` → `common`，`common` 不依赖任何平台代码。
+- **依赖倒置**：核心业务只依赖 `IWorldAdapter`、`IServerScheduler` 两个接口；平台差异全部收敛在适配层的 `*Ref` 与 `*Adapter` 实现中。
+- **组合根**：各平台入口创建唯一的 `StructEngineCore`，在其中装配适配器、任务队列与历史管理器，并把 service 交给命令层。
 
 ## License
 

@@ -27,11 +27,13 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build -Dorg.gradle.java.home=$JAVA_HOME
 
-      - name: Stage plugin jar
+      - name: Stage platform jars
         run: |
           mkdir -p staging
-          PLUGIN_JAR=$(ls build/libs/structengine-*.jar | grep -v -- '-sources.jar')
-          cp "$PLUGIN_JAR" staging/
+          cp structengine-fabric/build/libs/structengine-fabric-*.jar staging/
+          cp structengine-neoforge/build/libs/structengine-neoforge-*.jar staging/
+          cp structengine-paper/build/libs/structengine-paper-*.jar staging/
+          rm -f staging/*-sources.jar
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

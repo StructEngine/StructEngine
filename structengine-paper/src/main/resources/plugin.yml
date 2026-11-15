@@ -1,0 +1,16 @@
+name: StructEngine
+version: '${version}'
+main: com.structengine.paper.StructEnginePaperPlugin
+api-version: '1.21'
+authors: [Administrator]
+description: 通过 /buildmodel <url> 从远程 JSON 拉取体素模型，并在世界中分批次异步构建方块。
+commands:
+  buildmodel:
+    description: 从远程 JSON 构建体素模型
+    usage: /buildmodel <url>
+  rollback:
+    description: 回滚最近一次构建
+    usage: /rollback
+  redo:
+    description: 恢复最近一次回滚
+    usage: /redo

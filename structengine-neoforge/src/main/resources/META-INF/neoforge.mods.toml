@@ -1,0 +1,25 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+issueTrackerURL="https://github.com/StructEngine/StructEngine/issues"
+
+[[mods]]
+modId="structengine"
+version="${version}"
+displayName="StructEngine Voxel Builder"
+description='''通过 /buildmodel <url> 从远程 JSON 拉取体素模型，并在世界中分批次异步构建方块。'''
+authors="Administrator"
+
+[[dependencies.structengine]]
+modId="neoforge"
+type="required"
+versionRange="[21.11,)"
+ordering="NONE"
+side="SERVER"
+
+[[dependencies.structengine]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.11,1.22)"
+ordering="NONE"
+side="SERVER"

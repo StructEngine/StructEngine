@@ -1,0 +1,28 @@
+plugins {
+    id 'net.neoforged.gradle.userdev' version "${neogradle_version}"
+}
+
+repositories {
+    maven {
+        name = 'NeoForged'
+        url = 'https://maven.neoforged.net/releases'
+    }
+}
+
+base {
+    archivesName = 'structengine-neoforge'
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neoforge_version}"
+
+    // 核心逻辑下沉到 common
+    implementation project(':structengine-common')
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand 'version': project.version
+    }
+}
