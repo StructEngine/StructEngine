@@ -58,7 +58,7 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 | 产物 | 用途 |
 | --- | --- |
 | `structengine-fabric/build/libs/structengine-fabric-1.0.0.jar` | Fabric 模组（放入 `mods/`，已通过 Jar-in-Jar 内置 common） |
-| `structengine-neoforge/build/libs/structengine-neoforge-1.0.0.jar` | NeoForge 模组（放入 `mods/`） |
+| `structengine-neoforge/build/libs/structengine-neoforge-1.0.0.jar` | NeoForge 模组（放入 `mods/`，已内含 common 核心类） |
 | `structengine-paper/build/libs/structengine-paper-1.0.0.jar` | Paper 插件（放入 `plugins/`，已内含 common 逻辑类） |
 | `structengine-common/build/libs/structengine-common-1.0.0.jar` | 核心逻辑库（纯 Java，无需单独安装） |
 

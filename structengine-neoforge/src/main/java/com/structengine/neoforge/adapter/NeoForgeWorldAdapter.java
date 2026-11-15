@@ -8,7 +8,7 @@ import com.structengine.buildmodel.spi.WorldRef;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -69,12 +69,12 @@ public class NeoForgeWorldAdapter implements IWorldAdapter {
         if (blockId == null || blockId.isBlank()) {
             return null;
         }
-        ResourceLocation id = ResourceLocation.tryParse(blockId);
+        Identifier id = Identifier.tryParse(blockId);
         if (id == null) {
             return null;
         }
-        Block block = BuiltInRegistries.BLOCK.get(id);
-        if (block == Blocks.AIR) {
+        Block block = BuiltInRegistries.BLOCK.getValue(id);
+        if (block == null || block == Blocks.AIR) {
             return null;
         }
         return block.defaultBlockState();

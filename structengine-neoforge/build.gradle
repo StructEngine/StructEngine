@@ -13,6 +13,13 @@ base {
     archivesName = 'structengine-neoforge'
 }
 
+// NeoGradle 需要显式声明工具链（用于 jar-in-jar 与 Java 执行环境）
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 dependencies {
     implementation "net.neoforged:neoforge:${neoforge_version}"
 
@@ -25,4 +32,9 @@ processResources {
     filesMatching('META-INF/neoforge.mods.toml') {
         expand 'version': project.version
     }
+}
+
+// NeoForge 模组 jar 需要随包携带 common 的核心逻辑类
+tasks.named('jar', Jar) {
+    from project(':structengine-common').sourceSets.main.output
 }
