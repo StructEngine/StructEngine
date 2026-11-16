@@ -28,6 +28,11 @@ class CoreCommandBridgeTest {
         }
 
         @Override
+        public java.util.List<RemotePlayerInfo> onlinePlayers() {
+            return java.util.List.of();
+        }
+
+        @Override
         public WorldRef defaultWorld() {
             return platform.world();
         }
@@ -77,6 +82,11 @@ class CoreCommandBridgeTest {
             @Override
             public PlayerRef resolvePlayer(String username) {
                 return platform.player();
+            }
+
+            @Override
+            public java.util.List<RemotePlayerInfo> onlinePlayers() {
+                return java.util.List.of();
             }
 
             @Override

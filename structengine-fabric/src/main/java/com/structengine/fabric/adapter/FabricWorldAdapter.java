@@ -8,6 +8,8 @@ import com.structengine.buildmodel.spi.WorldRef;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.registry.Registries;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -42,6 +44,11 @@ public class FabricWorldAdapter implements IWorldAdapter {
         BlockState state = resolveBlockState(blockId);
         if (state == null) {
             return;
+        }
+        if (state.contains(DoorBlock.HALF)) {
+            BlockPos blockPos = toBlockPos(pos);
+            boolean upper = world(world).getBlockState(blockPos.down()).getBlock() == state.getBlock();
+            state = state.with(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
         }
         world(world).setBlockState(toBlockPos(pos), state, 3);
     }

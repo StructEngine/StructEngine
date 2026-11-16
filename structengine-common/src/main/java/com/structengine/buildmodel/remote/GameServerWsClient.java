@@ -35,6 +35,7 @@ public final class GameServerWsClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(20);
     private static final Duration HEARTBEAT_TIMEOUT = Duration.ofSeconds(60);
+    private static final long PLAYER_REFRESH_SECONDS = 10;
     private static final long MAX_RECONNECT_DELAY_SECONDS = 30;
 
     private final WsSettings settings;
@@ -52,6 +53,7 @@ public final class GameServerWsClient {
     private volatile ScheduledExecutorService scheduler;
     private volatile ExecutorService virtualExecutor;
     private volatile ScheduledFuture<?> heartbeatTask;
+    private volatile ScheduledFuture<?> playerRefreshTask;
     private volatile long reconnectDelaySeconds = 1;
     private volatile long lastReceivedNanos = System.nanoTime();
 
@@ -105,6 +107,7 @@ public final class GameServerWsClient {
         }
         connected = false;
         cancelHeartbeat();
+        cancelPlayerRefresh();
 
         WebSocket socket;
         synchronized (connectionLock) {
@@ -180,6 +183,10 @@ public final class GameServerWsClient {
         reconnectScheduled.set(false);
         lastReceivedNanos = System.nanoTime();
         scheduleHeartbeat();
+        send(RemoteMessage.hello(settings.serverId(), settings.serverName(),
+                settings.blueMapUrl(), settings.mapId()));
+        requestPlayers(true);
+        schedulePlayerRefresh();
         LOG.log(System.Logger.Level.INFO,
                 "已连接 Platform WebSocket serverId=" + settings.serverId());
     }
@@ -195,6 +202,7 @@ public final class GameServerWsClient {
             this.webSocket = null;
         }
         cancelHeartbeat();
+        cancelPlayerRefresh();
         if (wasConnected) {
             LOG.log(System.Logger.Level.WARNING, "与 Platform 的连接断开: " + reason);
         }
@@ -220,6 +228,42 @@ public final class GameServerWsClient {
             task.cancel(false);
             heartbeatTask = null;
         }
+    }
+
+    private void schedulePlayerRefresh() {
+        synchronized (connectionLock) {
+            cancelPlayerRefresh();
+            ScheduledExecutorService current = scheduler;
+            if (current != null && running.get()) {
+                playerRefreshTask = current.scheduleAtFixedRate(() -> requestPlayers(true),
+                        PLAYER_REFRESH_SECONDS, PLAYER_REFRESH_SECONDS, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    private void cancelPlayerRefresh() {
+        ScheduledFuture<?> task = playerRefreshTask;
+        if (task != null) {
+            task.cancel(false);
+            playerRefreshTask = null;
+        }
+    }
+
+    private void requestPlayers(boolean full) {
+        if (!connected) {
+            return;
+        }
+        bridge.players(players -> {
+            if (connected) {
+                send(RemoteMessage.playerList(settings.serverId(), players, full));
+            }
+        }, error -> LOG.log(System.Logger.Level.WARNING,
+                "读取玩家列表失败: " + rootMessage(error)));
+    }
+
+    /** 供平台事件监听器在玩家加入/离开/换世界时立即刷新。 */
+    public void refreshPlayers() {
+        requestPlayers(true);
     }
 
     private void heartbeat() {
@@ -307,6 +351,9 @@ public final class GameServerWsClient {
         switch (message.action()) {
             case QUERY_Y -> handleQuery(message);
             case BUILD -> handleBuild(message);
+            case HISTORY_REQUEST -> handleHistory(message);
+            case ROLLBACK -> handleRollback(message);
+            case REDO -> handleRedo(message);
             case PING -> send(RemoteMessage.pong());
             case CONNECTED, PONG -> {
                 // 连接确认 / 心跳回执
@@ -337,9 +384,45 @@ public final class GameServerWsClient {
             send(RemoteMessage.error(taskId, reason));
             return;
         }
-        bridge.enqueueBuild(taskId, message.playerName(), message.x(), message.y(), message.z(),
-                message.modelUrl(),
+        bridge.enqueueBuild(taskId, message.playerUuid(), message.playerName(),
+                message.x(), message.y(), message.z(), message.modelUrl(),
+                message.modelName(), message.rotation() == null ? 0 : message.rotation(),
+                status -> send(RemoteMessage.buildStatus(taskId, message.playerUuid(),
+                        status.state(), status.placed(), status.total(), status.message())),
                 error -> send(RemoteMessage.error(taskId, rootMessage(error))));
+    }
+
+    private void handleHistory(RemoteMessage message) {
+        String requestId = message.requestId();
+        if (requestId == null || message.playerName() == null) {
+            LOG.log(System.Logger.Level.WARNING, "HISTORY_REQUEST 缺少 requestId/playerName");
+            return;
+        }
+        bridge.history(requestId, message.playerUuid(), message.playerName(),
+                history -> send(RemoteMessage.historyResponse(requestId, history)),
+                error -> send(RemoteMessage.error(requestId, rootMessage(error))));
+    }
+
+    private void handleRollback(RemoteMessage message) {
+        if (message.requestId() == null || message.playerName() == null) {
+            return;
+        }
+        bridge.rollback(message.requestId(), message.playerUuid(), message.playerName(),
+                message.historyId(),
+                status -> send(RemoteMessage.buildStatus(message.requestId(), message.playerUuid(),
+                        status.state(), status.placed(), status.total(), status.message())),
+                error -> send(RemoteMessage.error(message.requestId(), rootMessage(error))));
+    }
+
+    private void handleRedo(RemoteMessage message) {
+        if (message.requestId() == null || message.playerName() == null) {
+            return;
+        }
+        bridge.redo(message.requestId(), message.playerUuid(), message.playerName(),
+                message.historyId(),
+                status -> send(RemoteMessage.buildStatus(message.requestId(), message.playerUuid(),
+                        status.state(), status.placed(), status.total(), status.message())),
+                error -> send(RemoteMessage.error(message.requestId(), rootMessage(error))));
     }
 
     private static String rootMessage(Throwable throwable) {

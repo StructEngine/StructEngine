@@ -11,7 +11,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.type.Door;
 import org.bukkit.entity.Player;
 
 /**
@@ -41,7 +44,15 @@ public class PaperWorldAdapter implements IWorldAdapter {
         if (material == null) {
             return;
         }
-        block(world, pos).setType(material, false);
+        Block target = block(world, pos);
+        BlockData data = material.createBlockData();
+        if (data instanceof Door door) {
+            boolean upper = target.getRelative(BlockFace.DOWN).getType() == material;
+            door.setHalf(upper ? Bisected.Half.TOP : Bisected.Half.BOTTOM);
+            target.setBlockData(door, false);
+            return;
+        }
+        target.setType(material, false);
     }
 
     @Override

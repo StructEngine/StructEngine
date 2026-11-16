@@ -13,7 +13,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 /**
@@ -42,6 +44,11 @@ public class NeoForgeWorldAdapter implements IWorldAdapter {
         BlockState state = resolveBlockState(blockId);
         if (state == null) {
             return;
+        }
+        if (state.hasProperty(DoorBlock.HALF)) {
+            BlockPos blockPos = toBlockPos(pos);
+            boolean upper = world(world).getBlockState(blockPos.below()).getBlock() == state.getBlock();
+            state = state.setValue(DoorBlock.HALF, upper ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER);
         }
         world(world).setBlock(toBlockPos(pos), state, 3);
     }

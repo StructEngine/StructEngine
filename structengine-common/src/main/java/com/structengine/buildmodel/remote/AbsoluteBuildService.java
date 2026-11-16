@@ -39,15 +39,28 @@ public class AbsoluteBuildService {
     }
 
     /**
-     * 必须在服务端主线程调用（由 {@link CoreCommandBridge} 保证）。
+     * 兼容旧调用。
      */
     public void startBuild(String taskId, PlayerRef player, WorldRef world,
                            int originX, int originY, int originZ, String modelUrl,
                            Consumer<Throwable> onError) {
+        startBuild(taskId, player, world, originX, originY, originZ, modelUrl,
+                taskId, 0, status -> { }, onError);
+    }
+
+    /**
+     * 必须在服务端主线程调用（由 {@link CoreCommandBridge} 保证）。
+     */
+    public void startBuild(String taskId, PlayerRef player, WorldRef world,
+                           int originX, int originY, int originZ, String modelUrl,
+                           String modelName, int rotation,
+                           Consumer<RemoteBuildStatus> onStatus, Consumer<Throwable> onError) {
         CompletableFuture<List<VoxelBlock>> future;
         try {
+            onStatus.accept(RemoteBuildStatus.of("DOWNLOADING", 0, 0, "正在下载模型"));
             future = downloader.download(modelUrl);
         } catch (RuntimeException e) {
+            onStatus.accept(RemoteBuildStatus.of("FAILED", 0, 0, rootMessage(e)));
             fail(player, taskId, e, onError);
             return;
         }
@@ -55,32 +68,38 @@ public class AbsoluteBuildService {
         sendInfo(player, "任务 " + taskId + "：正在下载模型 " + modelUrl);
         future.whenComplete((blocks, error) -> {
             if (error != null) {
+                onStatus.accept(RemoteBuildStatus.of("FAILED", 0, 0, rootMessage(error)));
                 runOnMain(() -> fail(player, taskId, error, onError), onError);
                 return;
             }
-            runOnMain(() -> assembleAndEnqueue(taskId, player, world, originX, originY, originZ, blocks, onError),
+            runOnMain(() -> assembleAndEnqueue(taskId, player, world, originX, originY, originZ,
+                            blocks, modelName, rotation, onStatus, onError),
                     onError);
         });
     }
 
     private void assembleAndEnqueue(String taskId, PlayerRef player, WorldRef world,
                                     int originX, int originY, int originZ,
-                                    List<VoxelBlock> blocks, Consumer<Throwable> onError) {
+                                    List<VoxelBlock> blocks, String modelName, int rotation,
+                                    Consumer<RemoteBuildStatus> onStatus, Consumer<Throwable> onError) {
         try {
             AbsoluteModelBuildJob job = AbsoluteModelBuildJob.fromVoxelBlocks(
-                    taskId, player, world, originX, originY, originZ, blocks, worldAdapter);
+                    taskId, player, world, originX, originY, originZ, blocks, worldAdapter, onStatus);
             if (job.getTotal() == 0) {
                 throw new IllegalStateException("模型中没有可放置的方块");
             }
 
             RegionSnapshot snapshot = new RegionSnapshot(world, job.getPlacements(), worldAdapter);
             // associatedJob 传 null：回滚时仅按快照恢复，不影响已经在队列中的其他任务。
-            historyManager.recordBuild(player, world, snapshot, job.getPlacements(), null);
+            historyManager.recordBuild(player, world, snapshot, job.getPlacements(), null,
+                    taskId, modelName);
             taskQueue.enqueue(job);
+            onStatus.accept(RemoteBuildStatus.of("BUILDING", 0, job.getTotal(), "已进入构建队列"));
             sendInfo(player, "任务 " + taskId + "：已获取 " + job.getTotal()
                     + " 个方块，按绝对坐标 (" + originX + "," + originY + "," + originZ
                     + ") 开始分批构建...");
         } catch (Throwable e) {
+            onStatus.accept(RemoteBuildStatus.of("FAILED", 0, 0, rootMessage(e)));
             fail(player, taskId, e, onError);
         }
     }

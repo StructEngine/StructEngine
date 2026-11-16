@@ -84,8 +84,9 @@ class GameServerWsClientTest {
         }
 
         @Override
-        public void enqueueBuild(String taskId, String playerName, int x, int y, int z,
-                                 String modelUrl, Consumer<Throwable> onError) {
+        public void enqueueBuild(String taskId, String playerUuid, String playerName,
+                                 int x, int y, int z, String modelUrl, String modelName, int rotation,
+                                 Consumer<RemoteBuildStatus> onStatus, Consumer<Throwable> onError) {
             buildTaskId.set(taskId);
             buildPlayer.set(playerName);
             buildX.set(x);

@@ -27,6 +27,11 @@ public class RedoJob implements BuildJob {
     }
 
     @Override
+    public java.util.UUID playerId() {
+        return player.id();
+    }
+
+    @Override
     public boolean isDone() {
         return index >= placements.size();
     }

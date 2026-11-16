@@ -15,4 +15,11 @@ public record OfflinePlayerRef(UUID id, String name) implements PlayerRef {
         UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
         return new OfflinePlayerRef(uuid, name);
     }
+
+    public static OfflinePlayerRef of(UUID uuid, String username) {
+        UUID resolved = uuid != null ? uuid
+                : UUID.nameUUIDFromBytes(("OfflinePlayer:" + (username == null ? "" : username))
+                .getBytes(StandardCharsets.UTF_8));
+        return new OfflinePlayerRef(resolved, username == null ? "" : username);
+    }
 }

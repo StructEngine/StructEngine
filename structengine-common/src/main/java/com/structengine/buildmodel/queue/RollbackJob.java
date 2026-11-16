@@ -24,6 +24,11 @@ public class RollbackJob implements BuildJob {
     }
 
     @Override
+    public java.util.UUID playerId() {
+        return player.id();
+    }
+
+    @Override
     public boolean isDone() {
         return snapshot.isFullyRestored();
     }

@@ -38,6 +38,24 @@ class BuildTaskQueueTest {
     }
 
     @Test
+    void interleavesDifferentPlayersWithinTickBudget() {
+        FakePlatform first = new FakePlatform(UUID.randomUUID(), new BlockPosition(0, 0, 0), "minecraft:stone");
+        FakePlatform second = new FakePlatform(UUID.randomUUID(), new BlockPosition(0, 0, 0), "minecraft:stone");
+        BuildTaskQueue queue = new BuildTaskQueue();
+        queue.enqueue(job(first, 1));
+        queue.enqueue(job(second, 1));
+
+        assertEquals(2, queue.tick(2));
+        assertEquals(1, first.placed.size());
+        assertEquals(1, second.placed.size());
+
+        assertEquals(4, queue.tick(1000));
+        assertEquals(3, first.placed.size());
+        assertEquals(3, second.placed.size());
+        assertTrue(queue.isEmpty());
+    }
+
+    @Test
     void processesQueuedJobsInFifoOrder() {
         FakePlatform platform = new FakePlatform(UUID.randomUUID(), new BlockPosition(0, 0, 0), "minecraft:stone");
         BuildTaskQueue queue = new BuildTaskQueue();
