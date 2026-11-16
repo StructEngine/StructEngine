@@ -10,6 +10,11 @@ import com.structengine.paper.adapter.PaperWorldAdapter;
 import com.structengine.paper.command.BuildModelCommand;
 import com.structengine.paper.command.RollbackCommand;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.logging.Level;
@@ -30,6 +35,7 @@ public class StructEnginePaperPlugin extends JavaPlugin {
         register("rollback", new RollbackCommand(core.historyManager()));
         register("redo", new RollbackCommand(core.historyManager()));
         startRemoteClient();
+        registerPlayerEvents();
         getLogger().info("[StructEngine] Voxel Builder plugin initialized (paper).");
     }
 
@@ -45,6 +51,31 @@ public class StructEnginePaperPlugin extends JavaPlugin {
             remoteClient.start();
         } catch (Throwable e) {
             getLogger().log(Level.WARNING, "[StructEngine] 远程 WebSocket 初始化失败", e);
+        }
+    }
+
+    private void registerPlayerEvents() {
+        getServer().getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onJoin(PlayerJoinEvent event) {
+                refreshRemotePlayers();
+            }
+
+            @EventHandler
+            public void onQuit(PlayerQuitEvent event) {
+                refreshRemotePlayers();
+            }
+
+            @EventHandler
+            public void onWorldChange(PlayerChangedWorldEvent event) {
+                refreshRemotePlayers();
+            }
+        }, this);
+    }
+
+    private void refreshRemotePlayers() {
+        if (remoteClient != null) {
+            remoteClient.refreshPlayers();
         }
     }
 

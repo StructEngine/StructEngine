@@ -10,7 +10,9 @@ import com.structengine.fabric.adapter.FabricWorldAdapter;
 import com.structengine.fabric.command.BuildModelCommand;
 import com.structengine.fabric.command.RollbackCommand;
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,10 @@ public class StructEngineFabric implements ModInitializer {
         RollbackCommand.register();
         ServerLifecycleEvents.SERVER_STARTED.register(this::startRemoteClient);
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> stopRemoteClient());
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> refreshRemotePlayers());
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> refreshRemotePlayers());
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register(
+                (player, origin, destination) -> refreshRemotePlayers());
         LOGGER.info("[StructEngine] Voxel Builder plugin initialized (fabric).");
     }
 
@@ -48,6 +54,12 @@ public class StructEngineFabric implements ModInitializer {
             remoteClient.start();
         } catch (Throwable e) {
             LOGGER.warn("[StructEngine] 远程 WebSocket 初始化失败", e);
+        }
+    }
+
+    private static void refreshRemotePlayers() {
+        if (remoteClient != null) {
+            remoteClient.refreshPlayers();
         }
     }
 

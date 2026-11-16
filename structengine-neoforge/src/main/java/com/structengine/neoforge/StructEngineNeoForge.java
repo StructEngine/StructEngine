@@ -14,6 +14,7 @@ import net.neoforged.fml.common.Mod;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
@@ -38,6 +39,9 @@ public class StructEngineNeoForge {
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(this::onServerStarted);
         NeoForge.EVENT_BUS.addListener(this::onServerStopping);
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedInEvent.class, event -> refreshRemotePlayers());
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerLoggedOutEvent.class, event -> refreshRemotePlayers());
+        NeoForge.EVENT_BUS.addListener(PlayerEvent.PlayerChangedDimensionEvent.class, event -> refreshRemotePlayers());
         LOGGER.info("[StructEngine] Voxel Builder plugin initialized (neoforge).");
     }
 
@@ -58,6 +62,12 @@ public class StructEngineNeoForge {
             remoteClient.start();
         } catch (Throwable e) {
             LOGGER.warn("[StructEngine] 远程 WebSocket 初始化失败", e);
+        }
+    }
+
+    private static void refreshRemotePlayers() {
+        if (remoteClient != null) {
+            remoteClient.refreshPlayers();
         }
     }
 

@@ -121,7 +121,10 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 |------|------|------|
 | `STRUCTENGINE_WS_URL` | Platform WebSocket 地址，如 `ws://platform:8080/ws/game` | 否（不配置则仅保留原命令功能） |
 | `STRUCTENGINE_SERVER_ID` | 本服唯一标识，多服部署时必填，默认 `default` | 否 |
+| `STRUCTENGINE_SERVER_NAME` | Web 管理台展示名，默认等于 serverId | 否 |
 | `STRUCTENGINE_WS_TOKEN` | 握手令牌，对应 Platform 的 `STRUCTENGINE_GAME_TOKEN` | 生产建议 |
+| `STRUCTENGINE_BLUEMAP_URL` | 本服 BlueMap 定制选点页地址 | 是（Web 地图） |
+| `STRUCTENGINE_BLUEMAP_MAP_ID` | BlueMap 地图 ID，默认 `world` | 否 |
 | `STRUCTENGINE_REMOTE_ENABLED` | 设为 `false` 可关闭远程网络层 | 否 |
 
 示例（Paper）：
@@ -129,7 +132,9 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 ```bash
 STRUCTENGINE_WS_URL=ws://platform.example.com:8080/ws/game \
 STRUCTENGINE_SERVER_ID=survival \
+STRUCTENGINE_SERVER_NAME="生存服" \
 STRUCTENGINE_WS_TOKEN=change-me \
+STRUCTENGINE_BLUEMAP_URL=http://map.example.com:8100/structengine-map.html \
 java -jar paper-1.21.11.jar
 ```
 
@@ -138,16 +143,23 @@ java -jar paper-1.21.11.jar
 ### 链路与线程模型
 
 ```
+连接：HELLO(serverId, serverName, blueMapUrl, mapId, protocol=2)
+      + PLAYER_LIST（连接/玩家事件/每10秒，full=true）
 Platform QUERY_Y(taskId,x,z)
    → WS 网络线程解析
    → IServerScheduler.runTask 切到服务端主线程
    → IWorldAdapter.highestBlockYAt(world,x,z)
    → 主线程回传 RESPONSE_Y(taskId,y)
-   → Platform 生成模型并下发 BUILD(taskId,playerName,x,y,z,modelUrl)
+   → Platform 计算中心/旋转/原点并下发 BUILD(taskId,playerUuid,playerName,x,y,z,modelUrl,rotation)
    → 主线程解析玩家/世界，异步 HttpClient 下载 JSON
    → AbsoluteBuildService 生成绝对坐标任务
-   → 压入原有 BuildTaskQueue（分批放置 + RegionSnapshot 回滚记录）
+   → 每玩家独立队列轮转，压入原有 BuildTaskQueue
+   → BUILD_STATUS(DOWNLOADING/BUILDING/COMPLETED) 回传 Platform
 ```
+
+- **每玩家独立队列**：不同玩家可并行推进，共享每个 tick 的 1000 方块预算。
+- **历史/回滚**：插件回传 `HISTORY_RESPONSE`，支持 Web 按 `historyId` 回滚/恢复；历史仍为内存态，MCS 重启后清空。
+- **玩家列表**：连接、加入/离开/换世界时立即上报；每 10 秒全量刷新。
 
 - **不再计算高度**：`BUILD` 已带完整 `(x,y,z)`，插件只做 `origin + 模型相对偏移`。
 - **主线程安全**：QUERY_Y 与任务装配均通过 `IServerScheduler` 投递，WS 线程不直接触碰 Minecraft API。
