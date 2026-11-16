@@ -158,7 +158,7 @@ Platform QUERY_Y(taskId,x,z)
 ```
 
 - **每玩家独立队列**：不同玩家可并行推进，共享每个 tick 的 1000 方块预算。
-- **历史/回滚**：插件回传 `HISTORY_RESPONSE`，支持 Web 按 `historyId` 回滚/恢复；历史仍为内存态，MCS 重启后清空。
+- **历史/回滚**：插件回传 `HISTORY_RESPONSE`，支持 Web 按 `historyId` 回滚/恢复；历史仍为内存态，Minecraft Server 重启后清空。
 - **玩家列表**：连接、加入/离开/换世界时立即上报；每 10 秒全量刷新。
 
 - **不再计算高度**：`BUILD` 已带完整 `(x,y,z)`，插件只做 `origin + 模型相对偏移`。
