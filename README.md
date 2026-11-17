@@ -119,10 +119,9 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 
 | 变量 | 含义 | 必填 |
 |------|------|------|
-| `STRUCTENGINE_WS_URL` | Platform WebSocket 地址，如 `ws://platform:8080/ws/game` | 否（不配置则仅保留原命令功能） |
-| `STRUCTENGINE_SERVER_ID` | 本服唯一标识，多服部署时必填，默认 `default` | 否 |
-| `STRUCTENGINE_SERVER_NAME` | Web 管理台展示名，默认等于 serverId | 否 |
-| `STRUCTENGINE_WS_TOKEN` | 握手令牌，对应 Platform 的 `STRUCTENGINE_GAME_TOKEN` | 生产建议 |
+| `STRUCTENGINE_PLATFORM_URL` | Platform WebSocket 地址，如 `ws://platform:8080/ws/game` | 否（不配置则仅保留原命令功能） |
+| `STRUCTENGINE_SERVER_SECRET` | Platform 服务器详情中生成的一次性 secret | 配置 URL 时必填 |
+| `STRUCTENGINE_SERVER_NAME` | 展示名 | 否 |
 | `STRUCTENGINE_BLUEMAP_URL` | 本服 BlueMap 定制选点页地址 | 是（Web 地图） |
 | `STRUCTENGINE_BLUEMAP_MAP_ID` | BlueMap 地图 ID，默认 `world` | 否 |
 | `STRUCTENGINE_REMOTE_ENABLED` | 设为 `false` 可关闭远程网络层 | 否 |
@@ -130,10 +129,9 @@ NeoForge 模块需要能访问 `maven.neoforged.net`，Paper 模块需要 `repo.
 示例（Paper）：
 
 ```bash
-STRUCTENGINE_WS_URL=ws://platform.example.com:8080/ws/game \
-STRUCTENGINE_SERVER_ID=survival \
+STRUCTENGINE_PLATFORM_URL=ws://platform.example.com:8080/ws/game \
+STRUCTENGINE_SERVER_SECRET=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 STRUCTENGINE_SERVER_NAME="生存服" \
-STRUCTENGINE_WS_TOKEN=change-me \
 STRUCTENGINE_BLUEMAP_URL=http://map.example.com:8100/structengine-map.html \
 java -jar paper-1.21.11.jar
 ```
@@ -143,8 +141,9 @@ java -jar paper-1.21.11.jar
 ### 链路与线程模型
 
 ```
-连接：HELLO(serverId, serverName, blueMapUrl, mapId, protocol=2)
-      + PLAYER_LIST（连接/玩家事件/每10秒，full=true）
+握手：X-StructEngine-Secret: <secret>
+连接：HELLO(serverName, blueMapUrl, mapId, secret, protocol=3)
+      + PLAYER_LIST（连接/玩家事件/每10秒，full=true，带 secret）
 Platform QUERY_Y(taskId,x,z)
    → WS 网络线程解析
    → IServerScheduler.runTask 切到服务端主线程
@@ -165,7 +164,7 @@ Platform QUERY_Y(taskId,x,z)
 - **主线程安全**：QUERY_Y 与任务装配均通过 `IServerScheduler` 投递，WS 线程不直接触碰 Minecraft API。
 - **玩家离线**：仍会入队并完成构建，仅跳过聊天反馈；回滚历史以玩家 UUID 记录。
 - **心跳/重连**：每 20 秒 `PING`，60 秒无下行消息判定假死；断线按 1s→30s 指数退避重连。
-- **鉴权**：配置令牌后，握手请求携带 `X-StructEngine-Token` 请求头。
+- **鉴权**：握手携带 `X-StructEngine-Secret`，所有上行消息再带 `secret`；Platform 按 secret 反查服务器，不信任客户端自报 serverId。
 
 ### 远程构建与原有命令的关系
 

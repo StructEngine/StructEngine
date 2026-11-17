@@ -34,8 +34,8 @@ class GameServerWsClientIntegrationTest {
         try (TestClient client = new TestClient(port)) {
             assertTrue(server.connected.await(5, TimeUnit.SECONDS), "服务端应收到连接");
             waitUntil(() -> client.client.isConnected(), 5000);
-            assertEquals("secret", server.token.get());
-            assertTrue(server.serverId.get().contains("serverId=survival"));
+            assertEquals("secret", server.secret.get());
+            assertEquals("/ws/game", server.resource.get());
 
             // Platform 下发 QUERY_Y，客户端必须回调 bridge 并回传 RESPONSE_Y。
             server.send("{\"action\":\"QUERY_Y\",\"taskId\":\"q-1\",\"playerName\":\"Steve\",\"x\":10,\"z\":-20}");
@@ -97,8 +97,8 @@ class GameServerWsClientIntegrationTest {
 
         final CountDownLatch connected = new CountDownLatch(1);
         final BlockingQueue<String> messages = new LinkedBlockingQueue<>();
-        final AtomicReference<String> token = new AtomicReference<>();
-        final AtomicReference<String> serverId = new AtomicReference<>();
+        final AtomicReference<String> secret = new AtomicReference<>();
+        final AtomicReference<String> resource = new AtomicReference<>();
         private volatile WebSocket socket;
 
         TestServer(int port) {
@@ -109,8 +109,8 @@ class GameServerWsClientIntegrationTest {
         @Override
         public void onOpen(WebSocket conn, ClientHandshake handshake) {
             socket = conn;
-            token.set(handshake.getFieldValue("X-StructEngine-Token"));
-            serverId.set(handshake.getResourceDescriptor());
+            secret.set(handshake.getFieldValue("X-StructEngine-Secret"));
+            resource.set(handshake.getResourceDescriptor());
             connected.countDown();
             conn.send("{\"action\":\"CONNECTED\",\"message\":\"ok\"}");
         }
@@ -144,7 +144,7 @@ class GameServerWsClientIntegrationTest {
 
         TestClient(int port) {
             client = new GameServerWsClient(
-                    WsSettings.of("ws://127.0.0.1:" + port + "/ws/game", "survival", "secret"),
+                    WsSettings.of("ws://127.0.0.1:" + port + "/ws/game", "secret"),
                     bridge);
             client.start();
         }

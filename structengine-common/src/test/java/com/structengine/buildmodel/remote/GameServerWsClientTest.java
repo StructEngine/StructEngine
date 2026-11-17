@@ -13,7 +13,7 @@ class GameServerWsClientTest {
 
     private final RecordingBridge bridge = new RecordingBridge();
     private final GameServerWsClient client = new GameServerWsClient(
-            WsSettings.of("ws://localhost:1/ws/game", "survival", ""), bridge);
+            WsSettings.of("ws://localhost:1/ws/game", "secret"), bridge);
 
     @Test
     void queryYDispatchesToBridgeOnMainThreadContract() {
@@ -52,7 +52,7 @@ class GameServerWsClientTest {
 
     @Test
     void sendReturnsFalseWhileDisconnected() {
-        assertFalse(client.send(RemoteMessage.ping()));
+        assertFalse(client.send(RemoteMessage.ping("secret")));
     }
 
     @Test

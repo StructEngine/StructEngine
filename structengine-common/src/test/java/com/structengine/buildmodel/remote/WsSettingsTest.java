@@ -10,46 +10,42 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WsSettingsTest {
 
     @Test
-    void endpointAppendsServerId() {
-        WsSettings settings = WsSettings.of("ws://platform:8080/ws/game", "survival", "secret");
+    void endpointUsesConfiguredUrl() {
+        WsSettings settings = WsSettings.of("ws://platform:8080/ws/game", "secret");
         assertTrue(settings.enabled());
-        assertEquals("ws://platform:8080/ws/game?serverId=survival", settings.endpoint().toString());
+        assertEquals("ws://platform:8080/ws/game", settings.endpoint().toString());
+        assertEquals("secret", settings.secret());
     }
 
     @Test
     void endpointKeepsExistingQuery() {
-        WsSettings settings = WsSettings.of("ws://platform/ws/game?foo=bar", "srv", "");
-        assertEquals("ws://platform/ws/game?foo=bar&serverId=srv", settings.endpoint().toString());
+        WsSettings settings = WsSettings.of("ws://platform/ws/game?foo=bar", "secret");
+        assertEquals("ws://platform/ws/game?foo=bar", settings.endpoint().toString());
     }
 
     @Test
     void normalizesHttpSchemes() {
-        assertEquals("ws://platform/ws/game?serverId=default",
-                WsSettings.of("http://platform/ws/game", "", "").endpoint().toString());
-        assertEquals("wss://platform/ws/game?serverId=default",
-                WsSettings.of("https://platform/ws/game", null, null).endpoint().toString());
+        assertEquals("ws://platform/ws/game",
+                WsSettings.of("http://platform/ws/game", "secret").endpoint().toString());
+        assertEquals("wss://platform/ws/game",
+                WsSettings.of("https://platform/ws/game", "secret").endpoint().toString());
     }
 
     @Test
     void rejectsUnsupportedScheme() {
-        assertThrows(IllegalArgumentException.class, () -> WsSettings.of("ftp://platform/game", "s", ""));
-    }
-
-    @Test
-    void rejectsInvalidServerId() {
-        assertThrows(IllegalArgumentException.class, () -> WsSettings.of("ws://x", "bad id", ""));
+        assertThrows(IllegalArgumentException.class, () -> WsSettings.of("ftp://platform/game", "s"));
     }
 
     @Test
     void disabledWhenUrlBlank() {
-        WsSettings settings = WsSettings.of("", "survival", "");
+        WsSettings settings = WsSettings.of("", "secret");
         assertFalse(settings.enabled());
         assertThrows(IllegalStateException.class, settings::endpoint);
     }
 
     @Test
-    void toStringRedactsToken() {
-        String text = WsSettings.of("ws://x", "s", "super-secret").toString();
+    void toStringRedactsSecret() {
+        String text = WsSettings.of("ws://x", "super-secret").toString();
         assertTrue(text.contains("redacted"));
         assertFalse(text.contains("super-secret"));
     }
